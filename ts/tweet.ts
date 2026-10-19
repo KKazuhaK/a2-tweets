@@ -9,22 +9,35 @@ class Tweet {
 
 	//returns either 'live_event', 'achievement', 'completed_event', or 'miscellaneous'
     get source():string {
-        //TODO: identify whether the source is a live event, an achievement, a completed event, or miscellaneous.
-        return "unknown";
+        //Live events: "Watch my run right now with @Runkeeper Live ..."
+        if (this.text.startsWith("Watch my") || this.text.includes("#RKLive")) {
+            return "live_event";
+        }
+        //Achievements: personal records and goals
+        if (this.text.startsWith("Achieved") || this.text.startsWith("I just set a goal")) {
+            return "achievement";
+        }
+        //Completed events: "Just completed a ..." / "Just posted a ..."
+        if (this.text.startsWith("Just completed") || this.text.startsWith("Just posted")) {
+            return "completed_event";
+        }
+        return "miscellaneous";
     }
 
     //returns a boolean, whether the text includes any content written by the person tweeting.
     get written():boolean {
-        //TODO: identify whether the tweet is written
-        return false;
+        return this.writtenText.length > 0;
     }
 
     get writtenText():string {
-        if(!this.written) {
+        //Strip out the links and the #Runkeeper hashtag
+        let stripped = this.text.replace(/https?:\/\/\S+/g, "").replace(/#Runkeeper/gi, "").trim();
+        //The default RunKeeper text is "with @Runkeeper. Check it out!"; user-written text follows " - "
+        let dashIndex = stripped.indexOf(" - ");
+        if (dashIndex == -1) {
             return "";
         }
-        //TODO: parse the written text from the tweet
-        return "";
+        return stripped.substring(dashIndex + 3).trim();
     }
 
     get activityType():string {
