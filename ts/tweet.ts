@@ -40,20 +40,43 @@ class Tweet {
         return stripped.substring(dashIndex + 3).trim();
     }
 
+    //The part of a completed tweet that describes the activity, e.g. "5.17 km run" or "yoga practice in 30:00".
+    //It sits between "Just completed a"/"Just posted an" and either " - " (user text) or " with @Runkeeper" (default text).
+    private get activityDescription():string {
+        let match = this.text.match(/^Just (?:completed|posted) an? (.+?)\s+(?:- |with @?Runkeeper)/);
+        return match ? match[1] : "";
+    }
+
     get activityType():string {
         if (this.source != 'completed_event') {
             return "unknown";
         }
-        //TODO: parse the activity type from the text of the tweet
-        return "";
+        let description = this.activityDescription;
+        //Distance-based activities: "<number> <km|mi> <activity>"
+        let distanceMatch = description.match(/^[\d.]+ (?:km|mi) (.+)$/);
+        if (distanceMatch) {
+            return distanceMatch[1];
+        }
+        //Time-based activities: "<activity> in <h:mm:ss>"
+        let timeMatch = description.match(/^(.+) in [\d:]+$/);
+        if (timeMatch) {
+            return timeMatch[1];
+        }
+        return "unknown";
     }
 
+    //Distance in miles; 0 for time-based activities
     get distance():number {
         if(this.source != 'completed_event') {
             return 0;
         }
-        //TODO: prase the distance from the text of the tweet
-        return 0;
+        let match = this.activityDescription.match(/^([\d.]+) (km|mi) /);
+        if (!match) {
+            return 0;
+        }
+        let value = parseFloat(match[1]);
+        //Convert kilometers to miles (1 mi = 1.609 km)
+        return match[2] == "km" ? value / 1.609 : value;
     }
 
     getHTMLTableRow(rowNumber:number):string {
